@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skaner QR - Generuj Kod</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="logo-section" style="text-align: center; margin-bottom: 30px;">
+            <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Twoje Logo" style="max-width: 200px; height: auto; border-radius: 5px;">
+        </div>
+
+        <h1>Witaj w Siercutz QR!</h1>
+        <p style="text-align: center;">Wprowadź swój adres email lub 9-cyfrowy numer telefonu, aby wygenerować swój unikalny kod referencyjny QR. Zbieraj punkty. 1 zeskanowany = 1 punkt. Skanujemy tylko nowych klientów. Jeśli mają twój kod QR - dostajesz punkt. Wyślij znajomym.</p>
+
+        <ul class="flash-messages">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <li class="{{ category }}">{{ message }}</li>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </ul>
+
+        <form method="POST" action="{{ url_for('main_bp.index') }}">
+            <div class="form-group">
+                <label for="identifier">Adres Email lub Numer Telefonu:</label>
+                <input type="text" id="identifier" name="identifier" required placeholder="np. email@example.com lub 123456789">
+            </div>
+            <button type="submit">Generuj/Pokaż Kod QR</button>
+        </form>
+
+        <p class="booksy-link">
+            <a href="{{ booksy_link }}" target="_blank" class="btn">Zarezerwuj wizytę w Booksy</a>
+        </p>
+        <p class="booksy-link">
+            <a href="{{ url_for('main_bp.user_stats') }}" class="btn btn-info">Sprawdź swoje punkty</a>
+        </p>
+    </div>
+    <footer>
+        <p>&copy; 2025 SkanerQR. Wszelkie prawa zastrzeżone.</p>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Administratora - Pulpit</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Pulpit Administratora</h1>
+        <ul class="flash-messages">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <li class="{{ category }}">{{ message }}</li>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </ul>
+
+        <h2>Skaner Kodów QR (Kamera)</h2>
+        <div class="scanner-section">
+            <button onclick="startScanner()" id="start-scanner-btn" class="btn btn-success">Uruchom skaner</button>
+            <button onclick="stopScanner()" id="stop-scanner-btn" class="btn btn-danger" style="display:none;">Zatrzymaj skaner</button>
+            <div id="qr-reader" style="width:500px; margin: 20px auto; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;"></div>
+            <div id="qr-reader-results"></div>
+
+            <form id="qr-form" method="POST" action="{{ url_for('admin_bp.scan') }}" style="display:none;">
+                <input type="hidden" name="code" id="qr-code-input">
+            </form>
+        </div>
+
+        <h2>Ręczna Regulacja Punktów</h2>
+        <form method="POST" action="{{ url_for('admin_bp.adjust_points') }}">
+            <div class="form-group">
+                <label for="identifier_adjust">Identyfikator użytkownika:</label>
+                <input type="text" id="identifier_adjust" name="identifier" required placeholder="email lub numer telefonu">
+            </div>
+            <div class="form-group">
+                <label for="points">Nowa liczba punktów:</label>
+                <input type="number" id="points" name="points" required min="0" value="0">
+            </div>
+            <button type="submit">Ustaw Punkty</button>
+        </form>
+
+        <h2>Lista Użytkowników</h2>
+        {% if users %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Identyfikator</th>
+                    <th>Kod</th>
+                    <th>Punkty</th>
+                    <th>Akcje</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>{{ user.identifier }}</td>
+                    <td>{{ user.code }}</td>
+                    <td>{{ user.points }}</td>
+                    <td class="dashboard-actions">
+                        <a href="{{ url_for('admin_bp.edit_user', identifier=user.identifier) }}" class="btn btn-info btn-small">Edytuj</a>
+                        <form method="POST" action="{{ url_for('admin_bp.delete_user_route', identifier=user.identifier) }}" onsubmit="return confirm('Czy na pewno chcesz usunąć użytkownika {{ user.identifier }}? Tej operacji nie można cofnąć.');" style="display:inline;">
+                            <button type="submit" class="btn btn-danger btn-small">Usuń</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>Brak użytkowników w systemie.</p>
+        {% endif %}
+
+        <p class="booksy-link">
+            <a href="{{ url_for('logout') }}" class="btn btn-danger">Wyloguj</a>
+        </p>
+    </div>
+    <footer>
+        <p>&copy; 2025 SkanerQR. Wszelkie prawa zastrzeżone.</p>
+    </footer>
+
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <script>
+        let html5QrcodeScanner = null;
+
+        function startScanner() {
+            // Inicjalizacja skanera tylko raz
+            if (html5QrcodeScanner === null) {
+                html5QrcodeScanner = new Html5QrcodeScanner(
+                    "qr-reader",
+                    {
+                        fps: 10,
+                        qrbox: { width: 250, height: 250 },
+                        // Pamiętaj, aby dodać preferowaną kamerę, jeśli jest więcej niż jedna
+                        // disableFlip: false // Domyślnie false, może być true dla rzadkich przypadków
+                    },
+                    /* verbose= */ false
+                );
+            }
+
+            html5QrcodeScanner.render(onScanSuccess, onScanError);
+            document.getElementById('start-scanner-btn').style.display = 'none';
+            document.getElementById('stop-scanner-btn').style.display = 'inline-block';
+            document.getElementById('qr-reader-results').innerHTML = '<p style="color:#007bff; font-weight:bold;">Skaner uruchomiony. Celuj kodem QR w kamerę.</p>';
+        }
+
+        function stopScanner() {
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.clear().then(() => {
+                    console.log("Skaner zatrzymany.");
+                    document.getElementById('start-scanner-btn').style.display = 'inline-block';
+                    document.getElementById('stop-scanner-btn').style.display = 'none';
+                    document.getElementById('qr-reader-results').innerHTML = '';
+                    // Resetuj html5QrcodeScanner po zatrzymaniu, aby można było uruchomić ponownie od czystego stanu
+                    html5QrcodeScanner = null;
+                }).catch((err) => {
+                    console.error("Nie udało się zatrzymać skanera: ", err);
+                    document.getElementById('qr-reader-results').innerHTML = '<p style="color:red;">Błąd przy zatrzymywaniu skanera.</p>';
+                });
+            }
+        }
+
+        function onScanSuccess(decodedText, decodedResult) {
+            console.log(`Kod zeskanowany: ${decodedText}`);
+            document.getElementById('qr-code-input').value = decodedText;
+            document.getElementById('qr-form').submit(); // Automatyczne wysłanie kodu do Flask
+            document.getElementById('qr-reader-results').innerHTML = `<p style="color:green; font-weight:bold;">Zeskanowano: ${decodedText}. Przetwarzam...</p>`;
+
+            // Opcjonalnie: zatrzymaj skaner po udanym zeskanowaniu
+            // stopScanner(); // Jeśli chcesz, aby skaner zatrzymywał się po pierwszym poprawnym skanie
+        }
+
+        function onScanError(errorMessage) {
+            // Możesz wyświetlać błędy, np. 'Nie znaleziono kodu QR w strumieniu wideo.'
+            // console.warn(`Błąd skanowania: ${errorMessage}`);
+            // document.getElementById('qr-reader-results').innerHTML = `<p style="color:#ffc107;">${errorMessage}</p>`;
+        }
+
+        // Dodatkowe style dla lepszego wyglądu skanera
+        const style = document.createElement('style');
+        style.innerHTML = `
+            #qr-reader__dashboard_section_csr {
+                background-color: #f8f9fa;
+                padding: 15px;
+                border-top: 1px solid #eee;
+            }
+            #qr-reader__scan_region {
+                border-radius: 8px;
+            }
+            #qr-reader__dashboard_section_csr button {
+                background-color: #007bff;
+                color: white;
+                padding: 8px 15px;
+                border: none;
+                border-radius: 5px;
+                cursor: pointer;
+                margin: 5px;
+            }
+            #qr-reader__dashboard_section_csr button:hover {
+                background-color: #0056b3;
+            }
+            .scanner-section {
+                text-align: center;
+                margin-bottom: 30px;
+            }
+        `;
+        document.head.appendChild(style);
+
+    </script>
+</body>
+</html>

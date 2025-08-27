@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Twój Kod QR</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Twój Kod Referencyjny QR</h1>
+        <ul class="flash-messages">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <li class="{{ category }}">{{ message }}</li>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </ul>
+
+        <div class="qr-code-section">
+            <p>To jest Twój unikalny kod referencyjny QR dla: <strong>{{ identifier }}</strong>.</p>
+            <img id="qrCodeImage" src="{{ url_for('main_bp.qr_image', identifier=identifier) }}" alt="QR Code dla {{ identifier }}">
+            <p style="margin-top: 15px;">Kod tekstowy: <strong>{{ code }}</strong></p>
+        </div>
+
+        <div class="share-options" style="text-align: center; margin-top: 30px;">
+            <h2>Udostępnij lub Pobierz</h2>
+            <button id="downloadQrBtn" class="btn btn-primary">Pobierz Kod QR</button>
+            <button id="shareQrBtn" class="btn btn-success">Udostępnij Kod QR</button>
+        </div>
+
+        <p class="booksy-link">
+            <a href="{{ booksy_link }}" target="_blank" class="btn">Zarezerwuj wizytę w Booksy</a>
+        </p>
+        <p class="booksy-link">
+            <a href="{{ url_for('main_bp.user_stats') }}" class="btn btn-info">Sprawdź swoje punkty</a>
+        </p>
+        <p class="booksy-link">
+            <a href="{{ url_for('main_bp.index') }}" class="btn btn-secondary">Wróć do strony głównej</a>
+        </p>
+    </div>
+
+    <footer>
+        <p>&copy; 2025 SkanerQR. Wszelkie prawa zastrzeżone.</p>
+    </footer>
+<script>
+        // Ta linia renderuje zmienną 'identifier' z Pythona do zmiennej JavaScript 'jsIdentifier'.
+        // Używamy |tojson, aby upewnić się, że tekst jest prawidłowo zakodowany dla JavaScript (np. z cudzysłowami).
+        const jsIdentifier = {{ identifier | tojson }};
+
+        document.getElementById('downloadQrBtn').addEventListener('click', function() {
+            const qrImage = document.getElementById('qrCodeImage');
+            const imageUrl = qrImage.src;
+            // Używamy już zdefiniowanej zmiennej JavaScript 'jsIdentifier'
+            const fileName = `kod_qr_${jsIdentifier}.png`;
+
+            fetch(imageUrl)
+                .then(response => response.blob())
+                .then(blob => {
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = fileName;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                })
+                .catch(() => alert('Nie udało się pobrać kodu QR. Spróbuj ponownie.'));
+        });
+
+        document.getElementById('shareQrBtn').addEventListener('click', async function() {
+            const qrImage = document.getElementById('qrCodeImage');
+            const imageUrl = qrImage.src;
+            // Używamy już zdefiniowanej zmiennej JavaScript 'jsIdentifier'
+            const identifier = jsIdentifier;
+            const shareText = `Oto mój kod referencyjny QR do SkanerQR! Zeskanuj go, aby zdobyć punkty.`;
+
+            // Sprawdź, czy Web Share API jest dostępne
+            if (navigator.share) {
+                try {
+                    // Pobierz obrazek jako blob, aby udostępnić go bezpośrednio
+                    const response = await fetch(imageUrl);
+                    const blob = await response.blob();
+                    const file = new File([blob], `kod_qr_${identifier}.png`, { type: 'image/png' });
+
+                    await navigator.share({
+                        title: 'Mój Kod QR',
+                        text: shareText,
+                        files: [file], // Udostępnia plik obrazu
+                        // Alternatywnie, jeśli chcesz udostępnić tylko link do obrazka:
+                        // url: imageUrl
+                    });
+                    console.log('Kod QR udostępniony pomyślnie!');
+                } catch (error) {
+                    console.error('Błąd udostępniania:', error);
+                    // Możesz tu dodać flash message lub alert informujący użytkownika
+                    alert('Nie udało się udostępnić. Upewnij się, że masz aplikację do udostępniania.');
+                }
+            } else {
+                // Fallback dla przeglądarek, które nie wspierają Web Share API
+                alert('Twoja przeglądarka nie obsługuje funkcji udostępniania. Możesz pobrać kod QR i udostępnić go ręcznie.');
+            }
+        });
+    </script>
+
+</body>
+</html>

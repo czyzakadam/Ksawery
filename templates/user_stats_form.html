@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sprawdź Swoje Punkty</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Sprawdź Swoje Punkty</h1>
+        <p>Wprowadź swój adres email lub 9-cyfrowy numer telefonu, aby sprawdzić swoje aktualne statystyki punktowe.</p>
+
+        <ul class="flash-messages">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <li class="{{ category }}">{{ message }}</li>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </ul>
+
+        <form method="POST" action="{{ url_for('main_bp.user_stats') }}">
+            <div class="form-group">
+                <label for="identifier">Adres Email lub Numer Telefonu:</label>
+                <input type="text" id="identifier" name="identifier" required placeholder="np. email@example.com lub 123456789">
+            </div>
+            <button type="submit">Sprawdź Punkty</button>
+        </form>
+
+        <p class="booksy-link">
+            <a href="{{ url_for('main_bp.index') }}" class="btn btn-info">Wróć do strony głównej</a>
+        </p>
+    </div>
+    <footer>
+        <p>&copy; 2025 SkanerQR. Wszelkie prawa zastrzeżone.</p>
+    </footer>
+</body>
+</html>

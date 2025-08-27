@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Administratora - Logowanie</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Logowanie do Panelu Administratora</h1>
+        <ul class="flash-messages">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <li class="{{ category }}">{{ message }}</li>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </ul>
+        <form method="POST" action="{{ url_for('admin_bp.admin_login') }}">
+            <div class="form-group">
+                <label for="password">Hasło:</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            <button type="submit">Zaloguj</button>
+        </form>
+        <p class="booksy-link">
+            <a href="{{ url_for('main_bp.index') }}" class="btn btn-info">Wróć do strony głównej</a>
+        </p>
+    </div>
+    <footer>
+        <p>&copy; 2025 SkanerQR. Wszelkie prawa zastrzeżone.</p>
+    </footer>
+</body>
+</html>

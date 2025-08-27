@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Moje Statystyki</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Twoje Statystyki Punktowe</h1>
+        <ul class="flash-messages">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <li class="{{ category }}">{{ message }}</li>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </ul>
+
+        {% if user %}
+            <p class="stats-info"><strong>Twój identyfikator:</strong> {{ user.identifier }}</p>
+            <p class="stats-info"><strong>Twój kod referencyjny:</strong> {{ user.code }}</p>
+            <p class="stats-info"><strong>Twoje aktualne punkty:</strong> <span class="stats-points">{{ user.points }}</span></p>
+
+            <div class="qr-code-section">
+                <p>Twój kod QR:</p>
+                <img src="{{ url_for('main_bp.qr_image', identifier=user.identifier) }}" alt="QR Code for {{ user.identifier }}">
+            </div>
+
+            <p class="booksy-link">
+                <a href="{{ booksy_link }}" target="_blank" class="btn">Zarezerwuj wizytę w Booksy</a>
+            </p>
+        {% else %}
+            <p>Użytkownik nie znaleziony lub brak dostępu.</p>
+        {% endif %}
+
+        <p class="booksy-link">
+            <a href="{{ url_for('main_bp.index') }}" class="btn btn-info">Wróć do strony głównej</a>
+            <a href="{{ url_for('main_bp.user_stats') }}" class="btn btn-info">Sprawdź inne statystyki</a>
+        </p>
+    </div>
+    <footer>
+        <p>&copy; 2025 SkanerQR. Wszelkie prawa zastrzeżone.</p>
+    </footer>
+</body>
+</html>
